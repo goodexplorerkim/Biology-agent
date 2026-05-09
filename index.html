@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>단백질 합성 AI 튜터</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; }
+    header { background: #fff; border-bottom: 1px solid #eee; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    .logo { width: 36px; height: 36px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .header-text h1 { font-size: 16px; font-weight: 600; color: #222; }
+    .header-text p { font-size: 12px; color: #888; margin-top: 2px; }
+    #name-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .name-card { background: #fff; border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 400px; text-align: center; border: 1px solid #eee; }
+    .name-card h2 { font-size: 20px; color: #222; margin-bottom: 8px; }
+    .name-card p { font-size: 14px; color: #888; margin-bottom: 24px; }
+    .name-card input { width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; outline: none; text-align: center; }
+    .name-card input:focus { border-color: #4caf50; }
+    .mode-btns { display: flex; gap: 12px; margin-top: 16px; }
+    .mode-btn { flex: 1; padding: 13px; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 600; }
+    .mode-btn.chat { background: #4caf50; color: white; }
+    .mode-btn.chat:hover { background: #43a047; }
+    .mode-btn.quiz { background: #1976d2; color: white; }
+    .mode-btn.quiz:hover { background: #1565c0; }
+    #chat-screen { flex: 1; display: none; flex-direction: column; }
+    #chat { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .bubble-wrap { display: flex; align-items: flex-end; gap: 8px; }
+    .bubble-wrap.ai { justify-content: flex-start; }
+    .bubble-wrap.student { justify-content: flex-end; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: #e8f5e9; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .bubble { max-width: 72%; padding: 11px 15px; font-size: 14px; line-height: 1.7; }
+    .bubble.ai { background: #fff; border: 1px solid #eee; border-radius: 18px 18px 18px 4px; color: #222; }
+    .bubble.student { background: #4caf50; color: white; border-radius: 18px 18px 4px 18px; }
+    .typing { color: #aaa; font-size: 13px; padding: 8px 4px; }
+    .quick-wrap { padding: 0 16px 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .quick-btn { padding: 7px 14px; font-size: 13px; border-radius: 20px; border: 1px solid #ddd; background: #fff; color: #444; cursor: pointer; }
+    .quick-btn:hover { background: #f5f5f5; }
+    #input-area { background: #fff; border-top: 1px solid #eee; padding: 12px 16px; display: flex; gap: 8px; }
+    #user-input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; }
+    #user-input:focus { border-color: #4caf50; }
+    #send-btn { width: 42px; height: 42px; border-radius: 50%; background: #4caf50; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    #send-btn:hover { background: #43a047; }
+    #send-btn svg { width: 18px; height: 18px; fill: white; }
+    .save-btn { margin: 0 16px 12px; padding: 10px; background: #f5f5f5; border: 1px solid #eee; border-radius: 10px; font-size: 13px; color: #666; cursor: pointer; text-align: center; }
+    .save-btn:hover { background: #eee; }
+    #quiz-screen { flex: 1; display: none; flex-direction: column; }
+    #quiz-body { flex: 1; overflow-y: auto; padding: 20px 16px; }
+    .quiz-progress { font-size: 13px; color: #888; margin-bottom: 8px; }
+    .quiz-stage { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; font-weight: 600; }
+    .quiz-stage.transcription { background: #e8f5e9; color: #2e7d32; }
+    .quiz-stage.translation { background: #e3f2fd; color: #1565c0; }
+    .quiz-question { background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 20px; margin-bottom: 16px; font-size: 15px; line-height: 1.7; color: #222; }
+    .quiz-type { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .quiz-input-area { background: #fff; border-top: 1px solid #eee; padding: 12px 16px; display: flex; gap: 8px; }
+    .quiz-input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; }
+    .quiz-input:focus { border-color: #1976d2; }
+    .quiz-send-btn { width: 42px; height: 42px; border-radius: 50%; background: #1976d2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .quiz-send-btn svg { width: 18px; height: 18px; fill: white; }
+    .quiz-feedback { border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; font-size: 14px; line-height: 1.7; }
+    .quiz-feedback.correct { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+    .quiz-feedback.incorrect { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
+    .result-card { background: #fff; border-radius: 16px; padding: 32px; text-align: center; border: 1px solid #eee; }
+    .result-score { font-size: 48px; font-weight: 700; color: #4caf50; margin: 16px 0 8px; }
+    .result-msg { font-size: 15px; color: #555; margin-bottom: 24px; }
+    .result-detail { text-align: left; font-size: 14px; color: #555; line-height: 2; border-top: 1px solid #eee; padding-top: 16px; margin-bottom: 24px; }
+    .restart-btn { padding: 13px 32px; background: #4caf50; color: white; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 600; }
+    .restart-btn:hover { background: #43a047; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧬</div>
+  <div class="header-text">
+    <h1>단백질 합성 AI 튜터</h1>
+    <p>생명과학 | 단백질 합성 단원</p>
+  </div>
+</header>
+
+<div id="name-screen">
+  <div class="name-card">
+    <h2>안녕하세요! 👋</h2>
+    <p>시작하기 전에 이름을 입력해주세요</p>
+    <input id="name-input" type="text" placeholder="이름을 입력하세요" maxlength="10" />
+    <div class="mode-btns">
+      <button class="mode-btn chat" onclick="startChat()">💬 자유 학습</button>
+      <button class="mode-btn quiz" onclick="startQuiz()">📝 퀴즈 모드</button>
+    </div>
+  </div>
+</div>
+
+<div id="chat-screen">
+  <div id="chat"></div>
+  <div class="quick-wrap" id="quick-wrap"></div>
+  <button class="save-btn" onclick="saveChat()">💾 대화 내용 저장하기</button>
+  <div id="input-area">
+    <input id="user-input" type="text" placeholder="답변을 입력하세요..." />
+    <button id="send-btn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="quiz-screen">
+  <div id="quiz-body"></div>
+  <div class="quiz-input-area" id="quiz-input-area">
+    <input class="quiz-input" id="quiz-input" type="text" placeholder="답변을 입력하세요..." />
+    <button class="quiz-send-btn" onclick="submitQuiz()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+let studentName = '';
+let messages = [];
+let quizIndex = 0;
+let quizScore = 0;
+let quizAnswers = [];
+
+const SYSTEM_PROMPT = `당신은 한국 고등학교 생명과학 수업을 돕는 AI 튜터입니다.
+단백질 합성 단원을 가르치고 있습니다.
+
+[교수법 원칙]
+1. 학생이 오개념을 말하면 절대 바로 정답을 알려주지 마세요.
+2. 반드시 유도 질문으로 학생이 스스로 깨닫게 이끌어주세요.
+3. 답변은 2~3문장으로 짧고 친근하게 해주세요.
+4. 한국어로 답하세요.
+5. 학생 이름을 부를 때 반드시 이름 뒤에 "님"을 붙여주세요.
+
+[자주 나오는 오개념과 유도 질문]
+오개념1: "DNA가 직접 리보솜으로 간다"
+→ "DNA가 핵 밖으로 나올 수 있을까요? 핵과 리보솜은 세포 어디에 있을까요?"
+
+오개념2: "리보솜은 한 번 쓰고 분해된다"
+→ "리보솜이 한 번 쓰고 버려진다면 세포가 얼마나 비효율적일까요?"
+
+오개념3: "거친면 소포체 기능이 중요하지 않다"
+→ "거친면 소포체의 구조가 매끈면 소포체와 다른 점은 무엇일까요?"
+
+오개념4: "분비 단백질 합성에 소낭이 쓰이지 않는다"
+→ "소낭이 없다면 단백질을 어떤 방법으로 수송할 수 있을까요?"
+
+오개념5: "원핵생물은 리보솜이 없다"
+→ "원핵생물에서 단백질을 합성하는 세포소기관이 존재할까요?"`;
+
+const QUIZ_SYSTEM = `당신은 한국 고등학교 생명과학 퀴즈 채점 AI입니다.
+
+[채점 원칙]
+1. 핵심 개념이 포함되어 있으면 정답으로 인정하세요.
+2. 맞으면 칭찬하고 추가 설명을 간단히 해주세요.
+3. 틀리면 어떤 부분이 틀렸는지 친절하게 알려주고 정답을 설명해주세요.
+4. 답변은 3~4문장으로 해주세요.
+5. 한국어로 답하세요.
+6. 학생 이름 뒤에 반드시 "님"을 붙여주세요.
+7. 마지막에 반드시 {"correct": true} 또는 {"correct": false} 형식으로만 결과를 추가하세요.`;
+
+const QUIZZES = [
+  { stage: 'transcription', stageLabel: '전사 단계', type: '단답형', question: 'DNA의 유전 정보가 mRNA로 복사되는 과정을 무엇이라고 하나요?', answer: '전사' },
+  { stage: 'transcription', stageLabel: '전사 단계', type: '서술형', question: '전사가 일어나는 장소와 필요한 효소를 설명해보세요.', answer: '진핵생물의 핵 안에서 RNA 중합효소에 의해 일어난다' },
+  { stage: 'translation', stageLabel: '번역 단계', type: '단답형', question: 'mRNA의 정보를 읽어서 단백질 합성에 관여하는 세포 구조물은 무엇인가요?', answer: '리보솜' },
+  { stage: 'translation', stageLabel: '번역 단계', type: '단답형', question: '아미노산을 리보솜으로 운반하는 RNA의 이름은 무엇인가요?', answer: 'tRNA' },
+  { stage: 'translation', stageLabel: '번역 단계', type: '서술형', question: '원핵생물과 진핵생물의 단백질 합성 과정에서 가장 큰 차이점은 무엇인가요?', answer: '진핵생물은 전사와 번역이 시간적 공간적으로 분리되어 있고, 원핵생물은 전사와 번역이 동시에 일어난다' }
+];
+
+async function callAI(system, messages) {
+  const res = await fetch('/.netlify/functions/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      system: system,
+      messages: messages
+    })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || '오류가 발생했어요.';
+}
+
+function startChat() {
+  const nameInput = document.getElementById('name-input').value.trim();
+  if (!nameInput) { alert('이름을 입력해주세요!'); return; }
+  studentName = nameInput;
+  document.getElementById('name-screen').style.display = 'none';
+  document.getElementById('chat-screen').style.display = 'flex';
+  addBubble(`안녕하세요, ${studentName}님! 😊 오늘 단백질 합성에 대해 같이 공부해봐요. 단백질은 세포 어디에서 만들어질까요?`, 'ai');
+  setQuickBtns(['DNA가 직접 만들어요', '리보솜에서 만들어요', '잘 모르겠어요']);
+}
+
+function startQuiz() {
+  const nameInput = document.getElementById('name-input').value.trim();
+  if (!nameInput) { alert('이름을 입력해주세요!'); return; }
+  studentName = nameInput;
+  quizIndex = 0;
+  quizScore = 0;
+  quizAnswers = [];
+  document.getElementById('name-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'flex';
+  showQuizQuestion();
+}
+
+function showQuizQuestion() {
+  const body = document.getElementById('quiz-body');
+  const q = QUIZZES[quizIndex];
+  body.innerHTML = `
+    <div class="quiz-progress">${studentName}님 | 문제 ${quizIndex + 1} / ${QUIZZES.length}</div>
+    <div class="quiz-stage ${q.stage}">${q.stageLabel}</div>
+    <div class="quiz-question">
+      <div class="quiz-type">${q.type}</div>
+      ${q.question}
+    </div>
+  `;
+  document.getElementById('quiz-input').value = '';
+  document.getElementById('quiz-input').focus();
+}
+
+async function submitQuiz() {
+  const input = document.getElementById('quiz-input');
+  const answer = input.value.trim();
+  if (!answer) return;
+  input.value = '';
+  document.getElementById('quiz-input-area').style.display = 'none';
+
+  const q = QUIZZES[quizIndex];
+  const body = document.getElementById('quiz-body');
+
+  const loading = document.createElement('div');
+  loading.className = 'typing';
+  loading.textContent = '채점 중...';
+  body.appendChild(loading);
+
+  try {
+    const reply = await callAI(QUIZ_SYSTEM, [{
+      role: 'user',
+      content: `학생 이름: ${studentName}\n문제: ${q.question}\n모범답안: ${q.answer}\n학생 답변: ${answer}`
+    }]);
+
+    body.removeChild(loading);
+
+    let isCorrect = false;
+    try {
+      const jsonMatch = reply.match(/\{"correct":\s*(true|false)\}/);
+      if (jsonMatch) isCorrect = JSON.parse(jsonMatch[0]).correct;
+    } catch(e) {}
+
+    if (isCorrect) quizScore++;
+    quizAnswers.push({ question: q.question, answer, isCorrect });
+
+    const cleanReply = reply.replace(/```json[\s\S]*?```/g, '').replace(/\{"correct":\s*(true|false)\}/g, '').trim();
+    const feedback = document.createElement('div');
+    feedback.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+    feedback.textContent = (isCorrect ? '✅ ' : '❌ ') + cleanReply;
+    body.appendChild(feedback);
+
+    quizIndex++;
+
+    if (quizIndex < QUIZZES.length) {
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'restart-btn';
+      nextBtn.style.cssText = 'display:block;margin:16px auto;background:#1976d2;';
+      nextBtn.textContent = '다음 문제 →';
+      nextBtn.onclick = () => {
+        showQuizQuestion();
+        document.getElementById('quiz-input-area').style.display = 'flex';
+      };
+      body.appendChild(nextBtn);
+    } else {
+      showResult();
+    }
+  } catch(e) {
+    body.removeChild(loading);
+    const err = document.createElement('div');
+    err.className = 'quiz-feedback incorrect';
+    err.textContent = '연결 오류가 발생했어요. 다시 시도해주세요.';
+    body.appendChild(err);
+    document.getElementById('quiz-input-area').style.display = 'flex';
+  }
+}
+
+function showResult() {
+  document.getElementById('quiz-input-area').style.display = 'none';
+  const body = document.getElementById('quiz-body');
+  const percent = Math.round((quizScore / QUIZZES.length) * 100);
+  let msg = '';
+  if (percent === 100) msg = '완벽해요! 단백질 합성 마스터! 🎉';
+  else if (percent >= 80) msg = '정말 잘했어요! 조금만 더 복습해봐요 😊';
+  else if (percent >= 60) msg = '절반 이상 맞았어요! 틀린 부분을 다시 확인해봐요 📖';
+  else msg = '조금 더 공부가 필요해요. 다시 도전해봐요! 💪';
+
+  let detailHtml = '';
+  quizAnswers.forEach((a, i) => {
+    detailHtml += `<div>${i+1}번: ${a.isCorrect ? '✅ 정답' : '❌ 오답'}</div>`;
+  });
+
+  body.innerHTML = `
+    <div class="result-card">
+      <h2>${studentName}님의 퀴즈 결과</h2>
+      <div class="result-score">${quizScore} / ${QUIZZES.length}</div>
+      <div class="result-msg">${msg}</div>
+      <div class="result-detail">${detailHtml}</div>
+      <button class="restart-btn" onclick="location.reload()">다시 시작하기</button>
+    </div>
+  `;
+}
+
+function addBubble(text, type) {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = `bubble-wrap ${type}`;
+  if (type === 'ai') {
+    wrap.innerHTML = `<div class="avatar">🧬</div><div class="bubble ai">${text}</div>`;
+  } else {
+    wrap.innerHTML = `<div class="bubble student">${text}</div>`;
+  }
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function setQuickBtns(options) {
+  const wrap = document.getElementById('quick-wrap');
+  wrap.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.textContent = opt;
+    btn.onclick = () => { document.getElementById('user-input').value = opt; sendMessage(); };
+    wrap.appendChild(btn);
+  });
+}
+
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('quick-wrap').innerHTML = '';
+  addBubble(text, 'student');
+  messages.push({ role: 'user', content: text });
+
+  const typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.textContent = 'AI 튜터가 답변 중...';
+  document.getElementById('chat').appendChild(typing);
+
+  try {
+    const reply = await callAI(SYSTEM_PROMPT + `\n\n학생 이름: ${studentName}`, messages);
+    document.getElementById('chat').removeChild(typing);
+    messages.push({ role: 'assistant', content: reply });
+    addBubble(reply, 'ai');
+  } catch(e) {
+    document.getElementById('chat').removeChild(typing);
+    addBubble('연결 오류가 발생했어요. API 키를 확인해주세요.', 'ai');
+  }
+}
+
+function saveChat() {
+  const bubbles = document.querySelectorAll('.bubble');
+  let text = `[단백질 합성 AI 튜터 대화 기록]\n학생: ${studentName}\n날짜: ${new Date().toLocaleDateString('ko-KR')}\n\n`;
+  bubbles.forEach(b => {
+    text += (b.classList.contains('ai') ? 'AI튜터: ' : `${studentName}: `) + b.textContent + '\n\n';
+  });
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${studentName}_단백질합성_학습기록.txt`;
+  a.click();
+}
+
+document.getElementById('user-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+document.getElementById('quiz-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuiz(); });
+</script>
+</body>
+</html>
