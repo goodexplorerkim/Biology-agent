@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>식물과 에너지 AI 튜터</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; }
+    header { background: #fff; border-bottom: 1px solid #eee; padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    .logo { width: 36px; height: 36px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .header-text h1 { font-size: 16px; font-weight: 600; color: #222; }
+    .header-text p { font-size: 12px; color: #888; margin-top: 2px; }
+    #name-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .name-card { background: #fff; border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 400px; text-align: center; border: 1px solid #eee; }
+    .name-card h2 { font-size: 20px; color: #222; margin-bottom: 8px; }
+    .name-card p { font-size: 14px; color: #888; margin-bottom: 24px; }
+    .name-card input { width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; outline: none; text-align: center; }
+    .name-card input:focus { border-color: #4caf50; }
+    .mode-btns { display: flex; gap: 12px; margin-top: 16px; }
+    .mode-btn { flex: 1; padding: 13px; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 600; }
+    .mode-btn.chat { background: #4caf50; color: white; }
+    .mode-btn.chat:hover { background: #43a047; }
+    .mode-btn.quiz { background: #1976d2; color: white; }
+    .mode-btn.quiz:hover { background: #1565c0; }
+    #chat-screen { flex: 1; display: none; flex-direction: column; }
+    #chat { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .bubble-wrap { display: flex; align-items: flex-end; gap: 8px; }
+    .bubble-wrap.ai { justify-content: flex-start; }
+    .bubble-wrap.student { justify-content: flex-end; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: #e8f5e9; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .bubble { max-width: 72%; padding: 11px 15px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+    .bubble.ai { background: #fff; border: 1px solid #eee; border-radius: 18px 18px 18px 4px; color: #222; }
+    .bubble.student { background: #4caf50; color: white; border-radius: 18px 18px 4px 18px; }
+    .typing { color: #aaa; font-size: 13px; padding: 8px 4px; display: flex; align-items: center; gap: 6px; }
+    .pipeline-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; font-weight: 600; }
+    .quick-wrap { padding: 0 16px 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .quick-btn { padding: 7px 14px; font-size: 13px; border-radius: 20px; border: 1px solid #ddd; background: #fff; color: #444; cursor: pointer; }
+    .quick-btn:hover { background: #f5f5f5; }
+    #input-area { background: #fff; border-top: 1px solid #eee; padding: 12px 16px; display: flex; gap: 8px; }
+    #user-input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; }
+    #user-input:focus { border-color: #4caf50; }
+    #send-btn { width: 42px; height: 42px; border-radius: 50%; background: #4caf50; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    #send-btn:hover { background: #43a047; }
+    #send-btn svg { width: 18px; height: 18px; fill: white; }
+    .save-btn { margin: 0 16px 12px; padding: 10px; background: #f5f5f5; border: 1px solid #eee; border-radius: 10px; font-size: 13px; color: #666; cursor: pointer; text-align: center; }
+    .save-btn:hover { background: #eee; }
+    .debug-btn { margin: 0 16px 8px; padding: 8px; background: #fff; border: 1px dashed #ccc; border-radius: 10px; font-size: 12px; color: #999; cursor: pointer; text-align: center; }
+    #debug-panel { display: none; margin: 0 16px 12px; padding: 10px 12px; background: #1b3b1d; border-radius: 10px; font-size: 11px; color: #c7ddbb; white-space: pre-wrap; max-height: 160px; overflow-y: auto; font-family: monospace; }
+    #quiz-screen { flex: 1; display: none; flex-direction: column; }
+    #quiz-body { flex: 1; overflow-y: auto; padding: 20px 16px; }
+    .quiz-progress { font-size: 13px; color: #888; margin-bottom: 8px; }
+    .quiz-stage { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; font-weight: 600; }
+    .quiz-stage.std01 { background: #e8f5e9; color: #2e7d32; }
+    .quiz-stage.std02 { background: #e3f2fd; color: #1565c0; }
+    .quiz-question { background: #fff; border: 1px solid #eee; border-radius: 16px; padding: 20px; margin-bottom: 16px; font-size: 15px; line-height: 1.7; color: #222; }
+    .quiz-type { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .quiz-input-area { background: #fff; border-top: 1px solid #eee; padding: 12px 16px; display: flex; gap: 8px; }
+    .quiz-input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; }
+    .quiz-input:focus { border-color: #1976d2; }
+    .quiz-send-btn { width: 42px; height: 42px; border-radius: 50%; background: #1976d2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .quiz-send-btn svg { width: 18px; height: 18px; fill: white; }
+    .quiz-feedback { border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; font-size: 14px; line-height: 1.7; }
+    .quiz-feedback.correct { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
+    .quiz-feedback.incorrect { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
+    .result-card { background: #fff; border-radius: 16px; padding: 32px; text-align: center; border: 1px solid #eee; }
+    .result-score { font-size: 48px; font-weight: 700; color: #4caf50; margin: 16px 0 8px; }
+    .result-msg { font-size: 15px; color: #555; margin-bottom: 24px; }
+    .result-detail { text-align: left; font-size: 14px; color: #555; line-height: 2; border-top: 1px solid #eee; padding-top: 16px; margin-bottom: 24px; }
+    .restart-btn { padding: 13px 32px; background: #4caf50; color: white; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; font-weight: 600; }
+    .restart-btn:hover { background: #43a047; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🌱</div>
+  <div class="header-text">
+    <h1>식물과 에너지 AI 튜터</h1>
+    <p>중학교 과학 | 학생 적응형 · RAG 기반</p>
+  </div>
+</header>
+
+<div id="name-screen">
+  <div class="name-card">
+    <h2>안녕하세요! 👋</h2>
+    <p>시작하기 전에 이름을 입력해주세요</p>
+    <input id="name-input" type="text" placeholder="이름을 입력하세요" maxlength="10" />
+    <div class="mode-btns">
+      <button class="mode-btn chat" onclick="startChat()">💬 자유 학습</button>
+      <button class="mode-btn quiz" onclick="startQuiz()">📝 퀴즈 모드</button>
+    </div>
+  </div>
+</div>
+
+<div id="chat-screen">
+  <div id="chat"></div>
+  <div class="quick-wrap" id="quick-wrap"></div>
+  <div id="debug-panel"></div>
+  <button class="debug-btn" onclick="toggleDebug()">🔧 진단·검증 로그 보기 (연구용)</button>
+  <button class="save-btn" onclick="saveChat()">💾 대화 내용 저장하기</button>
+  <div id="input-area">
+    <input id="user-input" type="text" placeholder="답변을 입력하세요..." />
+    <button id="send-btn" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="quiz-screen">
+  <div id="quiz-body"></div>
+  <div class="quiz-input-area" id="quiz-input-area">
+    <input class="quiz-input" id="quiz-input" type="text" placeholder="답변을 입력하세요..." />
+    <button class="quiz-send-btn" onclick="submitQuiz()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   상태 변수
+   ============================================================ */
+let studentName = '';
+let messages = [];              // 대화 이력 (LLM에 넘길 용도)
+let quizIndex = 0, quizScore = 0, quizAnswers = [];
+let ragData = null;             // rag_data.json 로드 결과
+let debugLog = [];
+
+// 학생 프로필 — "학습 이력" 단계에서 참조 (세션 내 누적)
+const studentProfile = {
+  levelHistory: [],       // ["C", "C", "D", ...]
+  misconceptionHistory: [], // 감지된 오개념 유형들
+  affectHistory: [],      // 감지된 정서 상태들
+};
+
+/* ============================================================
+   0단계: RAG 데이터 로드 (문서 준비·청킹·벡터화는 이미 완료된 상태로 배포)
+   ============================================================ */
+async function loadRagData() {
+  try {
+    const res = await fetch('./rag_data.json');
+    ragData = await res.json();
+  } catch (e) {
+    console.error('RAG 데이터 로드 실패:', e);
+    ragData = { idf: {}, chunks: [] };
+  }
+}
+loadRagData();
+
+/* ============================================================
+   RAG 검색 — Python 프로토타입(query_rag.py)과 동일한 알고리즘을
+   JS로 이식 (문자 2-gram TF-IDF + 코사인 유사도)
+   ============================================================ */
+function cleanText(text) {
+  return text.replace(/[#*`|>-]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function charBigrams(text) {
+  const cleaned = cleanText(text);
+  const tokens = cleaned.split(' ');
+  const grams = [];
+  for (let tok of tokens) {
+    tok = tok.trim();
+    if (tok.length === 0) continue;
+    if (tok.length === 1) { grams.push(tok); continue; }
+    for (let i = 0; i < tok.length - 1; i++) grams.push(tok.slice(i, i + 2));
+  }
+  return grams;
+}
+function vectorizeQuery(text, idf) {
+  const grams = charBigrams(text);
+  const tf = {};
+  let totalMatched = 0;
+  for (const g of grams) {
+    if (idf[g] === undefined) continue; // 어휘에 없는 2-gram은 무시 (Python embed_query와 동일)
+    tf[g] = (tf[g] || 0) + 1;
+    totalMatched++;
+  }
+  if (totalMatched === 0) return {};
+  const vec = {};
+  for (const g in tf) vec[g] = (tf[g] / totalMatched) * idf[g];
+  let normSq = 0;
+  for (const g in vec) normSq += vec[g] * vec[g];
+  const norm = Math.sqrt(normSq) || 1;
+  for (const g in vec) vec[g] /= norm;
+  return vec;
+}
+function cosineSim(vecA, vecB) {
+  let dot = 0;
+  const [small, big] = Object.keys(vecA).length < Object.keys(vecB).length ? [vecA, vecB] : [vecB, vecA];
+  for (const g in small) if (big[g] !== undefined) dot += small[g] * big[g];
+  return dot;
+}
+function ragSearch(query, topK = 2) {
+  if (!ragData || !ragData.chunks || ragData.chunks.length === 0) return [];
+  const qVec = vectorizeQuery(query, ragData.idf);
+  const scored = ragData.chunks.map(c => ({ chunk: c, score: cosineSim(qVec, c.vec) }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, topK).filter(r => r.score > 0);
+}
+
+/* ============================================================
+   3개 에이전트 시스템 프롬프트
+   ============================================================ */
+
+// ① 진단 에이전트 — 성취수준(A~E) · 오개념 유형 · 정서상태를 JSON으로만 반환
+const DIAGNOSIS_SYSTEM = `당신은 중학교 2학년 과학 '식물과 에너지' 단원의 학생 진단 AI입니다.
+학생의 답변을 읽고 아래 세 가지를 판단해 반드시 JSON 형식으로만 답하세요. 다른 설명은 절대 덧붙이지 마세요.
+
+[성취수준 판단 기준 (A가 최고 수준)]
+- E: 광합성 산물을 말하거나 주어진 절차대로만 실험을 수행하는 수준
+- D: 필요 물질·산물을 구별하고 결과를 정리·설명하는 수준
+- C: 환경요인을 언급하고 독립변인/종속변인을 구분하는 수준
+- B: 변인을 구분하고 실험 도구를 선택해 설계할 수 있는 수준
+- A: 실험을 설계하고 결과를 종합·일반화할 수 있는 수준
+
+[오개념 유형 판단 기준 — 해당 없으면 null]
+- "day_night": 광합성은 낮에만, 호흡은 밤에만 일어난다고 답함
+- "energy_direction": 광합성이 에너지를 소모하고 호흡이 에너지를 만든다고 답함 (방향이 반대로 되어 있음)
+- "gas_reversed": 광합성이 CO2를 방출하고 호흡이 O2를 방출한다고 답함 (기체 출입이 반대로 되어 있음)
+- 그 외 오개념이 없으면 null
+
+[정서 상태 판단 기준]
+- "안정": 특별한 부정적 신호 없음
+- "좌절": "모르겠어요", "어려워요", 반복되는 오답에 대한 부정적 반응
+- "자신감저하": "저는 못해요", 자기 비하적 표현
+- "흥미저하": "재미없어요", 성의 없는 짧은 답변 반복
+- "몰입": 적극적으로 질문하거나 스스로 다음 단계를 제안함
+
+반드시 아래 JSON 형식으로만 답하세요:
+{"level": "A"|"B"|"C"|"D"|"E", "misconception": "day_night"|"energy_direction"|"gas_reversed"|null, "affect": "안정"|"좌절"|"자신감저하"|"흥미저하"|"몰입"}`;
+
+// ③ 질문 생성 에이전트 — 진단 결과 + RAG 근거를 반영해 실제 응답 생성
+function buildGenerateSystem(diagnosis, evidenceText, name) {
+  const levelGuide = {
+    E: "필요 물질/산물을 스스로 말해보게 유도하는 쉬운 질문을 하세요.",
+    D: "결과에 영향을 준 조건이 무엇일지 묻는 질문을 하세요.",
+    C: "조작변인과 통제변인을 구분해보라고 요청하세요.",
+    B: "여러 결과를 종합하면 어떤 관계로 결론지을 수 있을지 물어보세요.",
+    A: "새로운 조건에서는 결과가 어떻게 달라질지 예측해보라고 하세요.",
+  };
+  const misconceptionGuide = {
+    day_night: "광합성이 밤에도 빛 없이는 못 하지만 호흡은 항상 일어난다는 점을 학생이 스스로 깨닫도록, 정답을 바로 말하지 말고 반례를 드는 질문을 하세요. 예: '그럼 낮 동안 식물이 계속 숨을 쉬지 않는 걸까요?'",
+    energy_direction: "광합성은 에너지를 저장하는 과정이고 호흡은 에너지를 꺼내 쓰는 과정이라는 것을, 정답을 알려주지 말고 유도 질문으로 이끄세요.",
+    gas_reversed: "광합성과 호흡의 기체 출입 방향이 반대라는 점을, 정답을 바로 알려주지 말고 유도 질문으로 이끄세요.",
+  };
+  const affectGuide = {
+    "좌절": "난이도를 한 단계 낮추고, 학생이 스스로 알아챈 부분이 있다면 반드시 먼저 인정하고 칭찬하세요.",
+    "자신감저하": "작은 성취라도 구체적으로 짚어 칭찬하고, 실패해도 괜찮다는 뉘앙스를 담으세요.",
+    "흥미저하": "학생의 실생활(음식, 식물 키우기 등)과 연결된 예시로 관심을 환기하세요.",
+    "몰입": "학생의 적극성을 격려하고 조금 더 심화된 질문을 던지세요.",
+    "안정": "현재 톤을 유지하세요.",
+  };
+
+  return `당신은 한국 중학교 2학년 과학 수업을 돕는 AI 튜터입니다. '식물과 에너지' 단원을 가르치고 있습니다.
+
+[현재 학생 진단 결과]
+- 성취수준: ${diagnosis.level} → ${levelGuide[diagnosis.level] || levelGuide.C}
+- 오개념: ${diagnosis.misconception ? (misconceptionGuide[diagnosis.misconception] || '') : '감지된 오개념 없음'}
+- 정서 상태: ${diagnosis.affect} → ${affectGuide[diagnosis.affect] || affectGuide["안정"]}
+
+[근거 자료 — 아래 내용에서 벗어난 사실을 지어내지 마세요]
+${evidenceText || '(관련 근거 자료를 찾지 못했습니다. 일반적인 교육과정 수준의 정확한 지식만 사용하세요.)'}
+
+[교수법 원칙]
+1. 학생이 오개념을 말하면 절대 바로 정답을 알려주지 마세요. 반드시 유도 질문으로 스스로 깨닫게 하세요.
+2. 위 근거 자료에 있는 내용과 사실이 다르게 답하지 마세요.
+3. 답변은 2~3문장으로 짧고 친근하게 하세요.
+4. 한국어로 답하세요.
+5. 학생 이름 뒤에 반드시 "님"을 붙이세요. 학생 이름: ${name}`;
+}
+
+// ④ 검증 에이전트 — 생성된 응답을 RAG 근거와 대조해 사실 오류 재검토
+function buildVerifySystem(evidenceText) {
+  return `당신은 생물 교육 콘텐츠 사실 검증 AI입니다.
+아래 [근거 자료]와 [검토할 응답]을 비교해서, 응답에 근거 자료와 어긋나는 과학적 사실 오류가 있는지 확인하세요.
+
+[근거 자료]
+${evidenceText || '(근거 자료 없음 — 일반적인 중학교 과학 수준의 정확성만 확인하세요)'}
+
+- 오류가 없으면 [검토할 응답]을 그대로, 토씨 하나 바꾸지 말고 그대로 돌려주세요.
+- 오류가 있으면, 같은 어조와 길이를 유지하면서 오류만 수정한 버전을 돌려주세요.
+- 검증 과정에 대한 설명이나 "수정했습니다" 같은 말은 절대 덧붙이지 말고, 최종 응답 텍스트만 출력하세요.`;
+}
+
+/* ============================================================
+   LLM 호출 — 기존 Netlify 함수(/.netlify/functions/chat) 재사용
+   진단·생성·검증 세 에이전트 모두 이 함수 하나로 호출한다
+   (system 프롬프트만 다르게 넘기면 됨)
+   ============================================================ */
+async function callAI(system, msgs) {
+  const res = await fetch('/.netlify/functions/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      system: system,
+      messages: msgs
+    })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || '오류가 발생했어요.';
+}
+
+function parseDiagnosis(raw) {
+  try {
+    const match = raw.match(/\{[\s\S]*\}/);
+    const obj = JSON.parse(match[0]);
+    if (!['A','B','C','D','E'].includes(obj.level)) obj.level = 'C';
+    return obj;
+  } catch (e) {
+    return { level: 'C', misconception: null, affect: '안정' };
+  }
+}
+
+/* ============================================================
+   메인 파이프라인: 학생질문 → 학습이력 반영 진단 → RAG검색
+   → LLM 답변생성 → 답변검증 → 학생에게 제공
+   ============================================================ */
+async function runPipeline(studentText) {
+  // ①+② 학생 질문 + 학습 이력을 함께 진단 에이전트에 전달
+  const historyNote = studentProfile.levelHistory.length
+    ? `\n\n[참고: 이전까지 관찰된 이 학생의 수준 이력] ${studentProfile.levelHistory.join(' → ')} (최근 오개념: ${studentProfile.misconceptionHistory.filter(Boolean).slice(-1)[0] || '없음'})`
+    : '';
+
+  setStatus('🔍 ① 학생 수준·오개념 진단 중...');
+  const diagRaw = await callAI(DIAGNOSIS_SYSTEM, [{ role: 'user', content: studentText + historyNote }]);
+  const diagnosis = parseDiagnosis(diagRaw);
+  studentProfile.levelHistory.push(diagnosis.level);
+  studentProfile.misconceptionHistory.push(diagnosis.misconception);
+  studentProfile.affectHistory.push(diagnosis.affect);
+
+  setStatus('📚 ② RAG 근거 자료 검색 중...');
+  const searchQuery = studentText + (diagnosis.misconception ? ' ' + diagnosis.misconception : '');
+  const hits = ragSearch(searchQuery, 2);
+  const evidenceText = hits.map(h => `- (${h.chunk.standards.join(',')}) ${h.chunk.text.slice(0, 300)}`).join('\n');
+
+  setStatus('✍️ ③ 스캐폴딩 답변 생성 중...');
+  const draft = await callAI(buildGenerateSystem(diagnosis, evidenceText, studentName), messages.concat([{ role: 'user', content: studentText }]));
+
+  setStatus('✅ ④ 답변 사실 검증 중...');
+  const verified = await callAI(buildVerifySystem(evidenceText), [{ role: 'user', content: `[검토할 응답]\n${draft}` }]);
+
+  debugLog.push({
+    student: studentText,
+    diagnosis,
+    ragHits: hits.map(h => ({ id: h.chunk.id, score: h.score.toFixed(3), standards: h.chunk.standards })),
+    draft,
+    verified,
+  });
+  renderDebug();
+
+  clearStatus();
+  return verified;
+}
+
+/* ============================================================
+   UI 로직 (기존 템플릿과 거의 동일 — 파이프라인 연결부만 교체)
+   ============================================================ */
+function startChat() {
+  const nameInput = document.getElementById('name-input').value.trim();
+  if (!nameInput) { alert('이름을 입력해주세요!'); return; }
+  studentName = nameInput;
+  document.getElementById('name-screen').style.display = 'none';
+  document.getElementById('chat-screen').style.display = 'flex';
+  addBubble(`안녕하세요, ${studentName}님! 😊 오늘 식물과 에너지에 대해 같이 공부해봐요. 식물이 광합성을 하려면 무엇이 필요할까요?`, 'ai');
+  setQuickBtns(['빛과 이산화탄소, 물이요', '햇빛만 있으면 돼요', '잘 모르겠어요']);
+}
+
+function setStatus(text) {
+  let typing = document.getElementById('typing-indicator');
+  if (!typing) {
+    typing = document.createElement('div');
+    typing.id = 'typing-indicator';
+    typing.className = 'typing';
+    document.getElementById('chat').appendChild(typing);
+  }
+  typing.innerHTML = `<span class="pipeline-badge">진행 중</span> ${text}`;
+  document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+}
+function clearStatus() {
+  const typing = document.getElementById('typing-indicator');
+  if (typing) typing.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('quick-wrap').innerHTML = '';
+  addBubble(text, 'student');
+  messages.push({ role: 'user', content: text });
+
+  try {
+    const reply = await runPipeline(text);
+    messages.push({ role: 'assistant', content: reply });
+    addBubble(reply, 'ai');
+  } catch (e) {
+    clearStatus();
+    addBubble('연결 오류가 발생했어요. API 키/네트워크를 확인해주세요.', 'ai');
+    console.error(e);
+  }
+}
+
+function toggleDebug() {
+  const panel = document.getElementById('debug-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+function renderDebug() {
+  const panel = document.getElementById('debug-panel');
+  panel.textContent = JSON.stringify(debugLog, null, 2);
+}
+
+function addBubble(text, type) {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = `bubble-wrap ${type}`;
+  if (type === 'ai') {
+    wrap.innerHTML = `<div class="avatar">🌱</div><div class="bubble ai"></div>`;
+    wrap.querySelector('.bubble').textContent = text;
+  } else {
+    wrap.innerHTML = `<div class="bubble student"></div>`;
+    wrap.querySelector('.bubble').textContent = text;
+  }
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function setQuickBtns(options) {
+  const wrap = document.getElementById('quick-wrap');
+  wrap.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'quick-btn';
+    btn.textContent = opt;
+    btn.onclick = () => { document.getElementById('user-input').value = opt; sendMessage(); };
+    wrap.appendChild(btn);
+  });
+}
+
+function saveChat() {
+  const bubbles = document.querySelectorAll('.bubble');
+  let text = `[식물과 에너지 AI 튜터 대화 기록]\n학생: ${studentName}\n날짜: ${new Date().toLocaleDateString('ko-KR')}\n수준 이력: ${studentProfile.levelHistory.join(' → ')}\n\n`;
+  bubbles.forEach(b => { text += b.textContent + '\n\n'; });
+  text += `\n[진단/검증 로그]\n${JSON.stringify(debugLog, null, 2)}`;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${studentName}_식물과에너지_학습기록.txt`;
+  a.click();
+}
+
+/* ============================================================
+   퀴즈 모드 (기존 템플릿 방식 유지 — 단일 채점 호출)
+   ============================================================ */
+const QUIZ_SYSTEM = `당신은 한국 중학교 과학 퀴즈 채점 AI입니다.
+1. 핵심 개념이 포함되어 있으면 정답으로 인정하세요.
+2. 맞으면 칭찬하고 추가 설명을 간단히 해주세요.
+3. 틀리면 어떤 부분이 틀렸는지 친절하게 알려주고 정답을 설명해주세요.
+4. 답변은 3~4문장으로 하세요.
+5. 한국어로 답하세요. 학생 이름 뒤에 반드시 "님"을 붙이세요.
+6. 마지막에 반드시 {"correct": true} 또는 {"correct": false} 형식으로만 결과를 추가하세요.`;
+
+const QUIZZES = [
+  { stage: 'std01', stageLabel: '9과12-01', type: '단답형', question: '광합성에 필요한 물질 두 가지는 무엇인가요?', answer: '물과 이산화탄소' },
+  { stage: 'std01', stageLabel: '9과12-01', type: '서술형', question: '광합성에 영향을 주는 환경요인을 두 가지 이상 설명해보세요.', answer: '빛의 세기, 이산화탄소 농도, 온도 등이 광합성 속도에 영향을 준다' },
+  { stage: 'std02', stageLabel: '9과12-02', type: '단답형', question: '식물이 호흡을 하는 시간은 낮인가요, 밤인가요, 항상인가요?', answer: '항상' },
+  { stage: 'std02', stageLabel: '9과12-02', type: '서술형', question: '광합성과 호흡에서 에너지는 각각 어떻게 되는지 설명해보세요.', answer: '광합성은 빛에너지를 화학에너지로 저장하고, 호흡은 저장된 화학에너지를 꺼내 쓴다' },
+  { stage: 'std02', stageLabel: '9과12-02', type: '단답형', question: '광합성에서 방출되는 기체는 무엇인가요?', answer: '산소' },
+];
+
+function startQuiz() {
+  const nameInput = document.getElementById('name-input').value.trim();
+  if (!nameInput) { alert('이름을 입력해주세요!'); return; }
+  studentName = nameInput;
+  quizIndex = 0; quizScore = 0; quizAnswers = [];
+  document.getElementById('name-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'flex';
+  showQuizQuestion();
+}
+
+function showQuizQuestion() {
+  const body = document.getElementById('quiz-body');
+  const q = QUIZZES[quizIndex];
+  body.innerHTML = `
+    <div class="quiz-progress">${studentName}님 | 문제 ${quizIndex + 1} / ${QUIZZES.length}</div>
+    <div class="quiz-stage ${q.stage}">${q.stageLabel}</div>
+    <div class="quiz-question"><div class="quiz-type">${q.type}</div>${q.question}</div>
+  `;
+  document.getElementById('quiz-input').value = '';
+  document.getElementById('quiz-input').focus();
+}
+
+async function submitQuiz() {
+  const input = document.getElementById('quiz-input');
+  const answer = input.value.trim();
+  if (!answer) return;
+  input.value = '';
+  document.getElementById('quiz-input-area').style.display = 'none';
+
+  const q = QUIZZES[quizIndex];
+  const body = document.getElementById('quiz-body');
+  const loading = document.createElement('div');
+  loading.className = 'typing';
+  loading.textContent = '채점 중...';
+  body.appendChild(loading);
+
+  try {
+    const reply = await callAI(QUIZ_SYSTEM, [{
+      role: 'user',
+      content: `학생 이름: ${studentName}\n문제: ${q.question}\n모범답안: ${q.answer}\n학생 답변: ${answer}`
+    }]);
+    body.removeChild(loading);
+
+    let isCorrect = false;
+    try {
+      const jsonMatch = reply.match(/\{"correct":\s*(true|false)\}/);
+      if (jsonMatch) isCorrect = JSON.parse(jsonMatch[0]).correct;
+    } catch (e) {}
+
+    if (isCorrect) quizScore++;
+    quizAnswers.push({ question: q.question, answer, isCorrect });
+
+    const cleanReply = reply.replace(/```json[\s\S]*?```/g, '').replace(/\{"correct":\s*(true|false)\}/g, '').trim();
+    const feedback = document.createElement('div');
+    feedback.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+    feedback.textContent = (isCorrect ? '✅ ' : '❌ ') + cleanReply;
+    body.appendChild(feedback);
+
+    quizIndex++;
+    if (quizIndex < QUIZZES.length) {
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'restart-btn';
+      nextBtn.style.cssText = 'display:block;margin:16px auto;background:#1976d2;';
+      nextBtn.textContent = '다음 문제 →';
+      nextBtn.onclick = () => { showQuizQuestion(); document.getElementById('quiz-input-area').style.display = 'flex'; };
+      body.appendChild(nextBtn);
+    } else {
+      showResult();
+    }
+  } catch (e) {
+    body.removeChild(loading);
+    const err = document.createElement('div');
+    err.className = 'quiz-feedback incorrect';
+    err.textContent = '연결 오류가 발생했어요. 다시 시도해주세요.';
+    body.appendChild(err);
+    document.getElementById('quiz-input-area').style.display = 'flex';
+  }
+}
+
+function showResult() {
+  document.getElementById('quiz-input-area').style.display = 'none';
+  const body = document.getElementById('quiz-body');
+  const percent = Math.round((quizScore / QUIZZES.length) * 100);
+  let msg = '';
+  if (percent === 100) msg = '완벽해요! 식물과 에너지 마스터! 🎉';
+  else if (percent >= 80) msg = '정말 잘했어요! 조금만 더 복습해봐요 😊';
+  else if (percent >= 60) msg = '절반 이상 맞았어요! 틀린 부분을 다시 확인해봐요 📖';
+  else msg = '조금 더 공부가 필요해요. 다시 도전해봐요! 💪';
+
+  let detailHtml = '';
+  quizAnswers.forEach((a, i) => { detailHtml += `<div>${i + 1}번: ${a.isCorrect ? '✅ 정답' : '❌ 오답'}</div>`; });
+
+  body.innerHTML = `
+    <div class="result-card">
+      <h2>${studentName}님의 퀴즈 결과</h2>
+      <div class="result-score">${quizScore} / ${QUIZZES.length}</div>
+      <div class="result-msg">${msg}</div>
+      <div class="result-detail">${detailHtml}</div>
+      <button class="restart-btn" onclick="location.reload()">다시 시작하기</button>
+    </div>
+  `;
+}
+
+document.getElementById('user-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+document.getElementById('quiz-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') submitQuiz(); });
+</script>
+</body>
+</html>
